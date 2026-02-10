@@ -1,0 +1,22 @@
+# Isolated CI/verify environment: Go, Helm, kubectl, Kind, Docker CLI.
+# All build, test, lint and verify run inside this container; host only runs Docker.
+FROM golang:1.23-alpine
+
+RUN apk add --no-cache bash curl docker-cli git
+
+# Helm (stable version)
+ENV HELM_VERSION=3.14.0
+RUN curl -sSL "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz" | tar -xzf - -C /tmp && mv /tmp/linux-amd64/helm /usr/local/bin/helm && rm -rf /tmp/linux-amd64
+
+# kubectl (match kind node version loosely)
+ENV KUBECTL_VERSION=1.30.0
+RUN curl -sSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && chmod +x /usr/local/bin/kubectl
+
+# Kind
+ENV KIND_VERSION=0.24.0
+RUN curl -sSLo /usr/local/bin/kind "https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-linux-amd64" && chmod +x /usr/local/bin/kind
+
+WORKDIR /workspace
+
+# Run via: docker run ... <image> ./scripts/ci-run.sh {test-unit|lint|verify}
+# No ENTRYPOINT so "verify" is passed correctly as $1

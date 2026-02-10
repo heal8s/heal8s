@@ -1,0 +1,16 @@
+# Kind config for CI (all-in-docker). Uses different host ports to avoid conflict with host cluster.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: heal8s-ci
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30082
+        hostPort: 18082
+        protocol: TCP
+      - containerPort: 30090
+        hostPort: 19090
+        protocol: TCP
+      - containerPort: 30093
+        hostPort: 19093
+        protocol: TCP

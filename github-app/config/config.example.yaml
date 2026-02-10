@@ -1,0 +1,12 @@
+github:
+  appID: 123456
+  installationID: 789012
+  privateKeyPath: /path/to/github-app.pem
+
+kubernetes:
+  kubeconfig: ~/.kube/config
+  namespace: heal8s-system
+
+processor:
+  pollInterval: 10s
+  batchSize: 10

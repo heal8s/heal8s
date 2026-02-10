@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: heal8s-operator
+  namespace: heal8s-system
+  labels:
+    app.kubernetes.io/name: heal8s
+    app.kubernetes.io/component: operator
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: heal8s
+      app.kubernetes.io/component: operator
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    scheme: http

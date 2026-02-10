@@ -1,0 +1,293 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: remediations.k8shealer.k8s-healer.io
+spec:
+  group: k8shealer.k8s-healer.io
+  names:
+    kind: Remediation
+    listKind: RemediationList
+    plural: remediations
+    shortNames:
+    - rem
+    singular: remediation
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Remediation is the Schema for the remediations API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values.'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase.'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: RemediationSpec defines the desired state of Remediation
+            properties:
+              action:
+                description: Action to take for remediation
+                properties:
+                  params:
+                    additionalProperties:
+                      type: string
+                    description: Parameters for the action (varies by type)
+                    type: object
+                  type:
+                    description: Type of action
+                    enum:
+                    - IncreaseMemory
+                    - ScaleUp
+                    - RollbackImage
+                    - CustomScript
+                    type: string
+                required:
+                - type
+                type: object
+              alert:
+                description: Alert information from Alertmanager
+                properties:
+                  alertId:
+                    description: AlertID is a unique identifier for this alert instance
+                    type: string
+                  fingerprint:
+                    description: Fingerprint is the Alertmanager fingerprint for deduplication
+                    type: string
+                  name:
+                    description: Name of the alert (e.g., "KubePodOOMKilled")
+                    type: string
+                  payload:
+                    description: Payload is the raw alert payload (JSON)
+                    type: string
+                  severity:
+                    description: Severity of the alert
+                    enum:
+                    - critical
+                    - warning
+                    - info
+                    type: string
+                  source:
+                    description: Source of the alert (e.g., "alertmanager")
+                    type: string
+                required:
+                - fingerprint
+                - name
+                - severity
+                - source
+                type: object
+              github:
+                description: GitHub integration settings
+                properties:
+                  autoMerge:
+                    default: false
+                    description: AutoMerge indicates if the PR should be auto-merged
+                    type: boolean
+                  baseBranch:
+                    default: main
+                    description: BaseBranch is the base branch for PRs
+                    type: string
+                  enabled:
+                    default: true
+                    description: Enabled indicates if GitHub integration is active
+                    type: boolean
+                  manifestPath:
+                    description: 'ManifestPath is the path template to the manifest
+                      file Supports interpolation: {environment}, {namespace}, {name}'
+                    type: string
+                  owner:
+                    description: Owner is the GitHub repository owner
+                    type: string
+                  prLabels:
+                    description: PRLabels are labels to add to the PR
+                    items:
+                      type: string
+                    type: array
+                  prTitleTemplate:
+                    description: PRTitleTemplate is the PR title template
+                    type: string
+                  repo:
+                    description: Repo is the GitHub repository name
+                    type: string
+                required:
+                - baseBranch
+                - enabled
+                - manifestPath
+                - owner
+                - repo
+                type: object
+              strategy:
+                description: Strategy for applying the remediation
+                properties:
+                  environment:
+                    description: Environment (e.g., "prod", "staging", "dev")
+                    type: string
+                  mode:
+                    default: GitOps
+                    description: 'Mode: GitOps or Direct'
+                    enum:
+                    - GitOps
+                    - Direct
+                    type: string
+                  requireApproval:
+                    default: true
+                    description: RequireApproval indicates if human approval is needed
+                    type: boolean
+                  ttl:
+                    default: 24h
+                    description: TTL for the remediation (e.g., "24h")
+                    type: string
+                required:
+                - mode
+                - requireApproval
+                type: object
+              target:
+                description: Target resource to remediate
+                properties:
+                  container:
+                    description: Container name (if multiple containers in pod)
+                    type: string
+                  kind:
+                    description: Kind of the resource (Deployment, StatefulSet, DaemonSet)
+                    enum:
+                    - Deployment
+                    - StatefulSet
+                    - DaemonSet
+                    type: string
+                  name:
+                    description: Name of the resource
+                    type: string
+                  namespace:
+                    description: Namespace of the resource
+                    type: string
+                required:
+                - kind
+                - name
+                - namespace
+                type: object
+            required:
+            - action
+            - alert
+            - strategy
+            - target
+            type: object
+          status:
+            description: RemediationStatus defines the observed state of Remediation
+            properties:
+              appliedAt:
+                description: AppliedAt is when the remediation was applied
+                format: date-time
+                type: string
+              attempts:
+                description: Attempts is the number of remediation attempts
+                type: integer
+              commitSHA:
+                description: CommitSHA is the Git commit SHA
+                type: string
+              conditions:
+                description: Conditions represent the latest available observations
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: lastTransitionTime is the last time the condition
+                        transitioned from one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: message is a human readable message indicating
+                        details about the transition.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: observedGeneration represents the .metadata.generation
+                        that the condition was set based upon.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: reason contains a programmatic identifier indicating
+                        the reason for the condition's last transition.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              lastUpdateTime:
+                description: LastUpdateTime is when the status was last updated
+                format: date-time
+                type: string
+              phase:
+                description: Phase is the current phase of the remediation
+                enum:
+                - Pending
+                - Analyzing
+                - PRCreated
+                - Applying
+                - Succeeded
+                - Failed
+                - Expired
+                type: string
+              prNumber:
+                description: PRNumber is the GitHub PR number
+                type: integer
+              prUrl:
+                description: PRURL is the full URL to the GitHub PR
+                type: string
+              reason:
+                description: Reason provides a human-readable explanation of the phase
+                type: string
+              resolvedAt:
+                description: ResolvedAt is when the remediation was resolved
+                format: date-time
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Phase
+      type: string
+      jsonPath: .status.phase
+    - name: Target
+      type: string
+      jsonPath: .spec.target.name
+    - name: Action
+      type: string
+      jsonPath: .spec.action.type
+    - name: PR
+      type: integer
+      jsonPath: .status.prNumber
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp

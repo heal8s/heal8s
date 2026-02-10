@@ -1,0 +1,18 @@
+apiVersion: v2
+name: heal8s
+description: Self-healing Kubernetes via GitHub Pull Requests
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - kubernetes
+  - self-healing
+  - automation
+  - gitops
+home: https://github.com/heal8s/heal8s
+sources:
+  - https://github.com/heal8s/heal8s
+maintainers:
+  - name: heal8s Contributors
+    url: https://github.com/heal8s/heal8s
+icon: https://raw.githubusercontent.com/heal8s/heal8s/main/docs/logo.png

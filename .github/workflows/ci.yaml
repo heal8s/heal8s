@@ -1,0 +1,20 @@
+# CI: same as local "make all-in-docker" — unit tests, lint, build, Kind, E2E (all in containers).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-and-verify:
+    name: Test, Lint & E2E (Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run all tests in Docker (unit, lint, build, Kind, verify)
+        run: make all-in-docker
+        env:
+          LEAVE_CLUSTER: "0"

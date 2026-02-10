@@ -1,0 +1,62 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: heal8s-alerts
+  namespace: heal8s-system
+spec:
+  groups:
+  - name: heal8s.rules
+    interval: 30s
+    rules:
+    # Alert when remediation failure rate is high
+    - alert: HighRemediationFailureRate
+      expr: |
+        sum(rate(heal8s_remediations_failed_total[5m])) 
+        / 
+        sum(rate(heal8s_remediations_created_total[5m])) > 0.5
+      for: 10m
+      labels:
+        severity: warning
+        component: heal8s-operator
+      annotations:
+        summary: "High remediation failure rate detected"
+        description: "More than 50% of remediations are failing (current rate: {{ $value | humanizePercentage }})"
+    
+    # Alert when no alerts are being received (possible webhook issue)
+    - alert: NoAlertsReceived
+      expr: |
+        rate(heal8s_alerts_received_total[10m]) == 0
+        and
+        sum_over_time(heal8s_alerts_received_total[1h]) > 0
+      for: 15m
+      labels:
+        severity: warning
+        component: heal8s-operator
+      annotations:
+        summary: "No alerts received from Alertmanager"
+        description: "heal8s has not received any alerts in the last 10 minutes, but has received alerts in the past hour. This may indicate a webhook connectivity issue."
+    
+    # Alert when remediation duration is too long
+    - alert: SlowRemediations
+      expr: |
+        histogram_quantile(0.95, 
+          rate(heal8s_remediation_duration_seconds_bucket[5m])
+        ) > 600
+      for: 15m
+      labels:
+        severity: warning
+        component: heal8s-operator
+      annotations:
+        summary: "Remediation processing is slow"
+        description: "95th percentile remediation duration is {{ $value | humanizeDuration }}, which exceeds the 10-minute threshold"
+    
+    # Alert when operator is down
+    - alert: Heal8sOperatorDown
+      expr: up{job="heal8s-operator"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        component: heal8s-operator
+      annotations:
+        summary: "heal8s operator is down"
+        description: "The heal8s operator has been down for more than 5 minutes"

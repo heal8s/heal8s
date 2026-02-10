@@ -1,0 +1,73 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "heal8s.fullname" . }}-manager-role
+  labels:
+    {{- include "heal8s.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - k8shealer.k8s-healer.io
+  resources:
+  - remediations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - k8shealer.k8s-healer.io
+  resources:
+  - remediations/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - k8shealer.k8s-healer.io
+  resources:
+  - remediations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  - daemonsets
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - patch
+  - watch
+{{- end }}

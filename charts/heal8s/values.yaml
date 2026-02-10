@@ -1,0 +1,109 @@
+# heal8s Helm Chart Values
+
+# Operator configuration
+operator:
+  # Image configuration
+  image:
+    repository: heal8s/operator
+    tag: "v0.1.0"
+    pullPolicy: IfNotPresent
+  
+  # Number of replicas
+  replicaCount: 1
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Webhook server configuration
+  webhook:
+    port: 8082
+    service:
+      type: ClusterIP
+      port: 8082
+  
+  # Metrics server
+  metrics:
+    port: 8080
+    enabled: true
+  
+  # Health probes
+  health:
+    port: 8081
+  
+  # Leader election
+  leaderElection:
+    enabled: true
+  
+  # Container security context (runAsNonRoot, runAsUser only; fsGroup is pod-level below)
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+
+  # Pod security context (fsGroup belongs here, not in container)
+  podSecurityContext:
+    seccompProfile:
+      type: RuntimeDefault
+    fsGroup: 65532
+  
+  # Node selector
+  nodeSelector: {}
+  
+  # Tolerations
+  tolerations: []
+  
+  # Affinity
+  affinity: {}
+
+# Alert routing configuration
+alertRouting:
+  KubePodOOMKilled:
+    action: IncreaseMemory
+    params:
+      memoryIncreasePercent: "25"
+      maxMemory: "2Gi"
+  
+  ContainerOOMKilled:
+    action: IncreaseMemory
+    params:
+      memoryIncreasePercent: "25"
+      maxMemory: "2Gi"
+  
+  KubeHpaMaxedOut:
+    action: ScaleUp
+    params:
+      scaleUpPercent: "50"
+      maxReplicas: "10"
+  
+  KubePodCrashLooping:
+    action: RollbackImage
+    params:
+      rollbackMaxRevisions: "5"
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "heal8s-operator"
+
+# RBAC configuration
+rbac:
+  create: true
+
+# CRD installation
+crds:
+  install: true
+
+# Namespace to deploy into
+namespaceOverride: ""
+
+# Common labels
+commonLabels: {}
+
+# Common annotations
+commonAnnotations: {}

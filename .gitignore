@@ -1,0 +1,73 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+testbin/
+dist/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+coverage.html
+
+# Go workspace file
+go.work.sum
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Kubebuilder
+**/zz_generated.*
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+
+# Secrets and configs
+*.pem
+*.key
+*.crt
+config/local/
+.env
+.env.local
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Build artifacts
+out/
+
+# Docker
+.dockerignore
+
+# Helm
+charts/**/charts/
+charts/**/*.tgz
+
+# PostgreSQL
+*.sql~
+pg_data/
+
+# Kind
+kind-config-*.yaml
+
+# CI runner kubeconfig (scripts/ci-run.sh)
+.kube/

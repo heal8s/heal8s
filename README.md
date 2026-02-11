@@ -37,7 +37,7 @@ graph LR
 
 **Components:**
 
-1. **Operator** (in-cluster): Receives Alertmanager webhooks, creates Remediation CRDs
+1. **Operator** (in-cluster): Receives Alertmanager webhooks, creates Remediation CRDs. Exposes a simple **web dashboard** on the same port (8082): events (alerts, remediations applied/failed) and what changed (e.g. memory limit 256Mi → 384Mi). Handy for local testing: `kubectl port-forward -n heal8s-system deployment/heal8s-operator 8082:8082` then open http://localhost:8082/
 2. **GitHub App Service** (out-of-cluster): Watches Remediation CRDs, creates GitHub PRs
 3. **Remediation CRD**: Kubernetes custom resource representing a remediation request
 
@@ -353,7 +353,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - [ ] PostgreSQL audit trail
 - [ ] Slack/Discord notifications
 - [ ] Multi-cluster support
-- [ ] Web dashboard
+- [x] Web dashboard (events & remediations at http://localhost:8082/ after port-forward)
 - [ ] AI-powered remediation suggestions
 
 ## Support

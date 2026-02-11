@@ -365,8 +365,9 @@ kubectl delete remediation <name> -n <namespace>
 # View operator logs
 kubectl logs -f -n heal8s-system deployment/heal8s-operator
 
-# Port-forward to operator webhook (for testing)
+# Port-forward to operator (webhook + dashboard)
 kubectl port-forward -n heal8s-system deployment/heal8s-operator 8082:8082
+# Then open http://localhost:8082/ in a browser to see events and applied remediations
 ```
 
 ## Testing Alert Reception

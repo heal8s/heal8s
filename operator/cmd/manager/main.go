@@ -36,6 +36,7 @@ import (
 
 	k8shealerv1alpha1 "github.com/heal8s/heal8s/operator/api/v1alpha1"
 	"github.com/heal8s/heal8s/operator/internal/controller"
+	"github.com/heal8s/heal8s/operator/internal/dashboard"
 	"github.com/heal8s/heal8s/operator/internal/webhooks"
 )
 
@@ -101,19 +102,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Start Alertmanager webhook HTTP server
+	// Start HTTP server: webhook, dashboard UI, health
 	go func() {
 		handler := webhooks.NewAlertmanagerHandler(mgr.GetClient(), mgr.GetScheme(), setupLog)
-		http.HandleFunc("/webhooks/alertmanager", handler.HandleWebhook)
-		http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/webhooks/alertmanager", handler.HandleWebhook)
+		mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("ok"))
 		})
+		// Dashboard (/, /dashboard, /api/events) — one catch-all so paths are handled inside dashboard
+		mux.HandleFunc("/", dashboard.ServeHTTP)
 
 		addr := fmt.Sprintf(":%d", webhookPort)
-		setupLog.Info("starting Alertmanager webhook server", "address", addr)
-		if err := http.ListenAndServe(addr, nil); err != nil {
-			setupLog.Error(err, "problem running Alertmanager webhook server")
+		setupLog.Info("starting webhook and dashboard server", "address", addr, "dashboard", "http://localhost"+addr+"/")
+		if err := http.ListenAndServe(addr, mux); err != nil {
+			setupLog.Error(err, "problem running webhook server")
 			os.Exit(1)
 		}
 	}()

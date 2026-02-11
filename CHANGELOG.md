@@ -134,11 +134,13 @@ None - initial release
 
 ## [Unreleased]
 
+### Added
+- **Web dashboard**: Operator serves a simple web UI on port 8082 (same as webhook). Shows in-memory event stream: alerts received, remediations applied/failed, with target, action and details (e.g. memory limit 256Mi → 384Mi). Routes: `/`, `/dashboard`, `/api/events` (JSON). Handy for local debugging: `kubectl port-forward -n heal8s-system deployment/heal8s-operator 8082:8082` then open http://localhost:8082/
+
 ### Planned
 - PostgreSQL audit trail
 - Multi-cluster support
 - Slack/Discord notifications
-- Web dashboard
 - AI-powered suggestions
 - Additional remediation scenarios
 - Cost optimization features

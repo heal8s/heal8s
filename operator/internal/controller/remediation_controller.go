@@ -22,6 +22,7 @@ import (
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	k8shealerv1alpha1 "github.com/heal8s/heal8s/operator/api/v1alpha1"
+	"github.com/heal8s/heal8s/operator/internal/dashboard"
 	"github.com/heal8s/heal8s/operator/internal/remediate"
 )
 
@@ -89,6 +91,15 @@ func (r *RemediationReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 func (r *RemediationReconciler) handleNewRemediation(ctx context.Context, remediation *k8shealerv1alpha1.Remediation) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Handling new remediation")
+
+	// Record for dashboard (alert/remediation created)
+	dashboard.RecordAlertReceived(
+		remediation.Spec.Alert.Name,
+		remediation.Spec.Target.Kind,
+		remediation.Spec.Target.Name,
+		remediation.Spec.Target.Namespace,
+		string(remediation.Spec.Action.Type),
+	)
 
 	// Update status to Pending
 	remediation.Status.Phase = k8shealerv1alpha1.RemediationPhasePending
@@ -205,6 +216,12 @@ func (r *RemediationReconciler) handleDirectRemediation(ctx context.Context, rem
 		return r.updateStatusToFailed(ctx, remediation, fmt.Sprintf("Failed to get target: %v", err))
 	}
 
+	// Capture "before" state for dashboard (e.g. memory limit)
+	var detailsBefore string
+	if dep, ok := targetObj.(*appsv1.Deployment); ok && remediation.Spec.Action.Type == k8shealerv1alpha1.ActionTypeIncreaseMemory {
+		detailsBefore = getContainerMemoryLimit(dep, remediation.Spec.Target.Container)
+	}
+
 	// Apply remediation based on action type
 	var err error
 	switch remediation.Spec.Action.Type {
@@ -219,6 +236,7 @@ func (r *RemediationReconciler) handleDirectRemediation(ctx context.Context, rem
 	}
 
 	if err != nil {
+		dashboard.RecordRemediationFailed(remediation.Name, remediation.Spec.Target.Kind, remediation.Spec.Target.Name, remediation.Spec.Target.Namespace, string(remediation.Spec.Action.Type), err.Error())
 		return r.updateStatusToFailed(ctx, remediation, fmt.Sprintf("Failed to calculate remediation: %v", err))
 	}
 
@@ -236,9 +254,14 @@ func (r *RemediationReconciler) handleDirectRemediation(ctx context.Context, rem
 
 	// Apply the patch
 	if err := r.Update(ctx, targetObj); err != nil {
+		dashboard.RecordRemediationFailed(remediation.Name, remediation.Spec.Target.Kind, remediation.Spec.Target.Name, remediation.Spec.Target.Namespace, string(remediation.Spec.Action.Type), err.Error())
 		logger.Error(err, "Failed to update target resource")
 		return r.updateStatusToFailed(ctx, remediation, fmt.Sprintf("Failed to apply remediation: %v", err))
 	}
+
+	// Record for dashboard (what changed)
+	details := buildAppliedDetails(targetObj, remediation.Spec.Target.Container, remediation.Spec.Action.Type, detailsBefore)
+	dashboard.RecordRemediationApplied(remediation.Name, remediation.Spec.Target.Kind, remediation.Spec.Target.Name, remediation.Spec.Target.Namespace, string(remediation.Spec.Action.Type), details)
 
 	// Update to Succeeded
 	remediation.Status.Phase = k8shealerv1alpha1.RemediationPhaseSucceeded
@@ -330,6 +353,39 @@ func (r *RemediationReconciler) updateStatusToExpired(ctx context.Context, remed
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func getContainerMemoryLimit(dep *appsv1.Deployment, containerName string) string {
+	for _, c := range dep.Spec.Template.Spec.Containers {
+		if containerName != "" && c.Name != containerName {
+			continue
+		}
+		if q, ok := c.Resources.Limits[corev1.ResourceMemory]; ok {
+			return q.String()
+		}
+		return "0"
+	}
+	return ""
+}
+
+func buildAppliedDetails(obj client.Object, containerName string, actionType k8shealerv1alpha1.ActionType, before string) string {
+	switch v := obj.(type) {
+	case *appsv1.Deployment:
+		for _, c := range v.Spec.Template.Spec.Containers {
+			if containerName != "" && c.Name != containerName {
+				continue
+			}
+			if q, ok := c.Resources.Limits[corev1.ResourceMemory]; ok {
+				after := q.String()
+				if before != "" {
+					return "memory limit " + before + " → " + after
+				}
+				return "memory limit " + after
+			}
+			break
+		}
+	}
+	return string(actionType) + " applied"
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -243,7 +243,7 @@ make kind-down
 - [ ] PostgreSQL audit trail integration
 - [ ] Slack/Discord notifications
 - [ ] Multi-cluster support
-- [ ] Web dashboard
+- [x] Web dashboard (operator :8082, in-memory events)
 - [ ] AI-powered suggestions
 - [ ] More remediation scenarios
 - [ ] Advanced cost optimization
